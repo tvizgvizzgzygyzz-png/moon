@@ -12645,14 +12645,33 @@ end
 
 -- Retorna true enquanto estiver usando o personagem (voando até o NPC)
 local function gachaMission()
-    -- v55: gira de LONGE. Nao voa mais ate o Zioles: tenta o remote de onde o jogador estiver (ate 3 vezes, com pausa curta).
-    -- O botao/prompt do NPC so e usado como plano B se o NPC JA estiver carregado perto (ate 60 studs), sem mover o personagem.
     local now = os.time()
     if now < Gacha.nextAt or now < Gacha.pauseUntil then return false end
     if getPlayerLevel() < 50 then
         Diag.gacha = "minimum level 50 for the gacha"
         return false
     end
+
+    pcall(function()
+        local Spinner = require(game:GetService("ReplicatedStorage").Controllers.UI.Spinner)
+        local SharedGachaUtil = require(game.ReplicatedStorage.Modules.Gacha.SharedGachaUtil)
+        local pg = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+        
+        if pg then
+            local spinnerWindow = pg:FindFirstChild("SpinnerWindow")
+            if not spinnerWindow or not spinnerWindow.Enabled then
+                if typeof(RandomFruit) == "function" then
+                    RandomFruit()
+                end
+            elseif spinnerWindow.Enabled and spinnerWindow:FindFirstChild("AboveSpinner") 
+               and spinnerWindow.AboveSpinner:FindFirstChild("Navigation") 
+               and spinnerWindow.AboveSpinner.Navigation:FindFirstChild("CloseButton") 
+               and spinnerWindow.AboveSpinner.Navigation.CloseButton.Visible then
+                Spinner:Close()
+            end
+        end
+    end)
+
     local done, why, secs
     for _ = 1, 3 do
         done, why, secs = tryRoll()
@@ -12752,6 +12771,7 @@ task.spawn(function()
         end))
     end
 end)
+
 
 -- v27: sem fruta carregada por perto -> visita cada ilha do mapa (a fruta so existe no cliente perto de voce,
 -- igual ao Auto Farm Chest). So depois de rodar o mapa inteiro sem achar nada e que entra o hop (mesmo AFL.hopRequest de sempre).
